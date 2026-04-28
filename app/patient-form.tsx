@@ -13,7 +13,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { db } from '../../firebaseConfig';
+import { db } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const Colors = {
@@ -24,11 +24,10 @@ const Colors = {
   text: '#1E293B',
   textLight: '#64748B',
   border: '#E2E8F0',
-  error: '#EF4444',
   success: '#10B981',
 };
 
-export default function FormScreen() {
+export default function PatientFormScreen() {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -42,19 +41,33 @@ export default function FormScreen() {
 
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const conditions = ['Good', 'Average', 'Bad', 'Very Bad'];
 
-  const handleSave = async () => {
+  const handleSubmit = async () => {
     if (!formData.name || !formData.age || !formData.contactNumber || !formData.address) {
-      Alert.alert('Incomplete', 'Please fill in Name, Age, Contact Number, and Address.');
+      if (Platform.OS === 'web') {
+        window.alert('Please fill in Name, Age, Contact Number, and Address.');
+      } else {
+        Alert.alert('Incomplete', 'Please fill in Name, Age, Contact Number, and Address.');
+      }
+      return;
+    }
+    
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(formData.contactNumber)) {
+      if (Platform.OS === 'web') {
+        window.alert('Please enter a valid 10-digit phone number starting with 0.');
+      } else {
+        Alert.alert('Invalid Phone Number', 'Please enter a valid 10-digit phone number starting with 0.');
+      }
       return;
     }
     
     setIsSubmitting(true);
 
     try {
-      // Add a new document with a generated id to "patients" collection
       await addDoc(collection(db, "patients"), {
         name: formData.name,
         address: formData.address,
@@ -67,20 +80,29 @@ export default function FormScreen() {
         createdAt: serverTimestamp(),
       });
 
-      Alert.alert('Success', 'Patient data saved successfully!', [
-        { text: 'OK', onPress: () => setFormData({
-          name: '', address: '', age: '', contactNumber: '', 
-          currentCondition: 'Average', conditionDescription: '', 
-          hasPreviousHistory: false, previousHistoryDescription: ''
-        })}
-      ]);
+      setIsSuccess(true);
     } catch (error: any) {
       console.error("Error adding document: ", error);
-      Alert.alert('Error', 'Failed to save data. Please try again.');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to submit data. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to submit data. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+      <View style={styles.successContainer}>
+        <Ionicons name="checkmark-circle" size={100} color={Colors.success} />
+        <Text style={styles.successTitle}>Thank You!</Text>
+        <Text style={styles.successText}>Your details have been successfully submitted to WellMed Specialist Centre.</Text>
+        <Text style={styles.successSubText}>You can safely close this page now.</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -91,7 +113,7 @@ export default function FormScreen() {
         
         <View style={styles.headerContainer}>
           <Image 
-            source={require('../../assets/images/logo.png')} 
+            source={require('../assets/images/logo.png')} 
             style={styles.logo}
             resizeMode="contain"
           />
@@ -108,7 +130,7 @@ export default function FormScreen() {
             <Text style={styles.label}>Full Name *</Text>
             <TextInput 
               style={[styles.input, focusedInput === 'name' && styles.inputFocused]} 
-              placeholder="Enter patient name"
+              placeholder="Enter your full name"
               value={formData.name}
               onChangeText={(text) => setFormData({...formData, name: text})}
               onFocus={() => setFocusedInput('name')}
@@ -137,6 +159,7 @@ export default function FormScreen() {
                 style={[styles.input, focusedInput === 'contact' && styles.inputFocused]} 
                 placeholder="Phone number"
                 keyboardType="phone-pad"
+                maxLength={10}
                 value={formData.contactNumber}
                 onChangeText={(text) => setFormData({...formData, contactNumber: text})}
                 onFocus={() => setFocusedInput('contact')}
@@ -150,7 +173,7 @@ export default function FormScreen() {
             <Text style={styles.label}>Address *</Text>
             <TextInput 
               style={[styles.input, focusedInput === 'address' && styles.inputFocused]} 
-              placeholder="Enter address"
+              placeholder="Enter your address"
               value={formData.address}
               onChangeText={(text) => setFormData({...formData, address: text})}
               onFocus={() => setFocusedInput('address')}
@@ -188,7 +211,7 @@ export default function FormScreen() {
             <Text style={styles.label}>Condition Description (Optional)</Text>
             <TextInput 
               style={[styles.input, styles.textArea, focusedInput === 'condDesc' && styles.inputFocused]} 
-              placeholder="Briefly describe the current condition..."
+              placeholder="Briefly describe your current condition..."
               multiline
               numberOfLines={3}
               value={formData.conditionDescription}
@@ -241,7 +264,7 @@ export default function FormScreen() {
 
         <TouchableOpacity 
           style={[styles.saveButton, isSubmitting && {opacity: 0.7}]} 
-          onPress={handleSave} 
+          onPress={handleSubmit} 
           activeOpacity={0.8}
           disabled={isSubmitting}
         >
@@ -249,8 +272,8 @@ export default function FormScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Text style={styles.saveButtonText}>Save Data</Text>
-              <Ionicons name="checkmark-circle" size={22} color={Colors.card} style={{marginLeft: 8}} />
+              <Text style={styles.saveButtonText}>Submit Details</Text>
+              <Ionicons name="send" size={20} color={Colors.card} style={{marginLeft: 8}} />
             </>
           )}
         </TouchableOpacity>
@@ -268,13 +291,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    maxWidth: 600, // Limit width on large screens (tablets/desktops)
+    alignSelf: 'center', // Center it on large screens
+    width: '100%',
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
-    marginTop: 12,
+    marginTop: 24,
   },
   logo: {
     width: 60,
@@ -293,7 +319,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 12,
-    color: Colors.secondary,
+    color: Colors.textLight,
     fontWeight: '800',
     letterSpacing: 1.5,
     marginTop: 2,
@@ -401,5 +427,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  successContainer: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  successTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.primary,
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  successText: {
+    fontSize: 16,
+    color: Colors.text,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  successSubText: {
+    fontSize: 14,
+    color: Colors.textLight,
+    textAlign: 'center',
   }
 });

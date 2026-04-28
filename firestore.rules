@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Patients collection rules
+    match /patients/{patient} {
+      // Allow anyone to submit new patient data
+      allow create: if true;
+      
+      // For now, allow reading data to display in the dashboard
+      // In a production environment, we would restrict this to authenticated admins only.
+      allow read: if true;
+      
+      // Prevent unauthorized updates or deletions
+      allow update, delete: if false;
+    }
+  }
+}

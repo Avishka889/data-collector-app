@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "DataCollectorApp",
-    "slug": "DataCollectorApp",
+    "name": "WellMed",
+    "slug": "WellMedDataCollector",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "datacollectorapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,37 +12,37 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.wellmed.datacollector",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.png"
+    },
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ]
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "39416c0a-8c99-498d-90fb-56453d6f68c1"
+      }
+    },
+    "owner": "wellmed.medi"
   }
 }
