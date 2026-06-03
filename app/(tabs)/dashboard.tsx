@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Platform, Alert, TextInput } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert, TextInput } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../../firebaseConfig';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
+
 
 const Colors = {
   primary: '#15B4C2',
@@ -133,7 +133,7 @@ export default function DashboardScreen() {
       const matchesSearch = (record.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (record.contactNumber || '').includes(searchQuery);
       const matchesCondition = selectedCondition === 'All' || record.condition === selectedCondition;
       return matchesDate && matchesSearch && matchesCondition;
-    } catch (e) { return false; }
+    } catch { return false; }
   });
 
   const stats = {
@@ -162,7 +162,7 @@ export default function DashboardScreen() {
       </body></html>`;
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri);
-    } catch (e) { Alert.alert("Error", "PDF failed"); }
+    } catch { Alert.alert("Error", "PDF failed"); }
   };
 
   if (isAuthenticating) {
