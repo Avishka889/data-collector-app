@@ -40,8 +40,8 @@ export default function QRScreen() {
           <QRCode
             value={formUrl}
             size={200}
-            color={Colors.text}
-            backgroundColor="transparent"
+            color="#000000"
+            backgroundColor="#FFFFFF"
           />
         </View>
 
