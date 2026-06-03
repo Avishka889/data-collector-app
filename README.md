@@ -20,17 +20,6 @@ A cross-platform mobile and web application built for **WellMed Specialist Centr
 
 ---
 
-## 📸 App Walkthrough & UI
-
-> [!TIP]
-> Add screenshots or GIFs showing the Patient Form, QR Code Screen, and Admin Dashboard here to make your repository look highly professional!
-
-| Patient Intake Form | Admin Dashboard | QR Code Share Screen |
-| :---: | :---: | :---: |
-| *[Add Form Screenshot]* | *[Add Dashboard Screenshot]* | *[Add QR Screenshot]* |
-
----
-
 ## 🛠️ Tech Stack & Tools
 
 *   **Frontend Framework:** [React Native](https://reactnative.dev/) & [Expo](https://expo.dev/) (SDK 54)
