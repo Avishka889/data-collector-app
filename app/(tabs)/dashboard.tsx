@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Platform, Alert, TextInput } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { db } from '../../firebaseConfig';
+import { db, auth } from '../../firebaseConfig';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
@@ -34,7 +35,49 @@ export default function DashboardScreen() {
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [showConditionPicker, setShowConditionPicker] = useState(false);
 
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Handle Silent Admin Login on screen load
   useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setIsAuthenticating(false);
+        setAuthError(null);
+      } else {
+        setIsAuthenticating(true);
+        // Silently log in in the background using admin credentials
+        signInWithEmailAndPassword(auth, 'REDACTED_ADMIN_EMAIL', 'REDACTED_ADMIN_PASSWORD')
+          .then(() => {
+            setIsAuthenticated(true);
+            setIsAuthenticating(false);
+            setAuthError(null);
+          })
+          .catch((err) => {
+            console.error("Silent sign in failed:", err);
+            setAuthError(
+              "Access Denied: Unauthenticated Session.\n\n" +
+              "To secure this dashboard in production, please make sure you have:\n" +
+              "1. Enabled Email/Password provider in Firebase Console.\n" +
+              "2. Created an admin user account: REDACTED_ADMIN_EMAIL with password REDACTED_ADMIN_PASSWORD"
+            );
+            setIsAuthenticating(false);
+            setIsAuthenticated(false);
+          });
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  // Listen to firestore changes only after authentication succeeds
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    setLoading(true);
     try {
       const q = query(collection(db, 'patients'), orderBy('createdAt', 'desc'));
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -64,10 +107,17 @@ export default function DashboardScreen() {
         });
         setRecords(data);
         setLoading(false);
-      }, (e) => setLoading(false));
+      }, (e) => {
+        console.error("Firestore real-time subscription error:", e);
+        setLoading(false);
+      });
       return () => unsubscribe();
-    } catch (e) { setLoading(false); }
-  }, []);
+    } catch (e) { 
+      console.error("Firestore initialization error:", e);
+      setLoading(false); 
+    }
+  }, [isAuthenticated]);
+
 
   const filteredRecords = records.filter(record => {
     try {
@@ -114,6 +164,54 @@ export default function DashboardScreen() {
       await Sharing.shareAsync(uri);
     } catch (e) { Alert.alert("Error", "PDF failed"); }
   };
+
+  if (isAuthenticating) {
+    return (
+      <View style={[styles.center, { backgroundColor: Colors.background, padding: 20 }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 12, color: Colors.textLight, fontWeight: '600' }}>Securing admin session...</Text>
+      </View>
+    );
+  }
+
+  if (authError) {
+    return (
+      <View style={[styles.center, { backgroundColor: Colors.background, padding: 32 }]}>
+        <Ionicons name="alert-circle-outline" size={64} color={Colors.danger} />
+        <Text style={{ fontSize: 18, fontWeight: 'bold', color: Colors.text, marginTop: 16, textAlign: 'center' }}>
+          Secure Authentication Error
+        </Text>
+        <Text style={{ fontSize: 14, color: Colors.textLight, marginTop: 12, textAlign: 'center', lineHeight: 20 }}>
+          {authError}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.printBtn, { marginTop: 24, paddingHorizontal: 20 }]} 
+          onPress={() => {
+            setAuthError(null);
+            setIsAuthenticating(true);
+            signInWithEmailAndPassword(auth, 'REDACTED_ADMIN_EMAIL', 'REDACTED_ADMIN_PASSWORD')
+              .then(() => {
+                setIsAuthenticated(true);
+                setIsAuthenticating(false);
+                setAuthError(null);
+              })
+              .catch((err) => {
+                console.error("Retry failed: ", err);
+                setAuthError(
+                  "Access Denied: Unauthenticated Session.\n\n" +
+                  "To secure this dashboard in production, please make sure you have:\n" +
+                  "1. Enabled Email/Password provider in Firebase Console.\n" +
+                  "2. Created an admin user account: REDACTED_ADMIN_EMAIL with password REDACTED_ADMIN_PASSWORD"
+                );
+                setIsAuthenticating(false);
+              });
+          }}
+        >
+          <Text style={styles.printBtnText}>Retry Authentication</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
