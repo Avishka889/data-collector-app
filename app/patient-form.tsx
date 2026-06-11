@@ -27,23 +27,40 @@ const Colors = {
   success: '#10B981',
 };
 
+const medicalHistoryItems = [
+  { key: 'DM', label: 'DM - Diabetic Mellitus' },
+  { key: 'HTN', label: 'HTN - Hypertension' },
+  { key: 'DL', label: 'DL - Dyslipidemia' },
+  { key: 'Thyroid', label: 'Thyroid' },
+  { key: 'Asthma', label: 'Asthma' },
+  { key: 'Arthritis', label: 'Arthritis' },
+  { key: 'Others', label: 'Others' },
+];
+
 export default function PatientFormScreen() {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
     age: '',
     contactNumber: '',
-    currentCondition: 'Average',
-    conditionDescription: '',
-    hasPreviousHistory: false,
-    previousHistoryDescription: '',
+    medicalHistory: [] as string[],
+    medicalHistoryOthers: '',
   });
 
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const conditions = ['Good', 'Average', 'Bad', 'Very Bad'];
+  const toggleMedicalHistory = (key: string) => {
+    setFormData(prev => {
+      const current = prev.medicalHistory;
+      if (current.includes(key)) {
+        return { ...prev, medicalHistory: current.filter(k => k !== key) };
+      } else {
+        return { ...prev, medicalHistory: [...current, key] };
+      }
+    });
+  };
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.age || !formData.contactNumber || !formData.address) {
@@ -73,10 +90,8 @@ export default function PatientFormScreen() {
         address: formData.address,
         age: Number(formData.age),
         contactNumber: formData.contactNumber,
-        currentCondition: formData.currentCondition,
-        conditionDescription: formData.conditionDescription,
-        hasPreviousHistory: formData.hasPreviousHistory,
-        previousHistoryDescription: formData.hasPreviousHistory ? formData.previousHistoryDescription : '',
+        medicalHistory: formData.medicalHistory,
+        medicalHistoryOthers: formData.medicalHistory.includes('Others') ? formData.medicalHistoryOthers : '',
         createdAt: serverTimestamp(),
       });
 
@@ -184,77 +199,37 @@ export default function PatientFormScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Medical Assessment</Text>
+          <Text style={styles.sectionTitle}>Medical History</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Current Condition</Text>
-            <View style={styles.pillContainer}>
-              {conditions.map((condition) => (
-                <TouchableOpacity 
-                  key={condition}
-                  style={[
-                    styles.pill, 
-                    formData.currentCondition === condition && styles.pillActive
-                  ]}
-                  onPress={() => setFormData({...formData, currentCondition: condition})}
-                >
-                  <Text style={[
-                    styles.pillText,
-                    formData.currentCondition === condition && styles.pillTextActive
-                  ]}>{condition}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          {medicalHistoryItems.map((item) => (
+            <TouchableOpacity
+              key={item.key}
+              style={styles.checkboxRow}
+              onPress={() => toggleMedicalHistory(item.key)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, formData.medicalHistory.includes(item.key) && styles.checkboxChecked]}>
+                {formData.medicalHistory.includes(item.key) && (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                )}
+              </View>
+              <Text style={[styles.checkboxLabel, formData.medicalHistory.includes(item.key) && styles.checkboxLabelChecked]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Condition Description (Optional)</Text>
-            <TextInput 
-              style={[styles.input, styles.textArea, focusedInput === 'condDesc' && styles.inputFocused]} 
-              placeholder="Briefly describe your current condition..."
-              multiline
-              numberOfLines={3}
-              value={formData.conditionDescription}
-              onChangeText={(text) => setFormData({...formData, conditionDescription: text})}
-              onFocus={() => setFocusedInput('condDesc')}
-              onBlur={() => setFocusedInput(null)}
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Previous Medical History</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Any existing medical conditions?</Text>
-            <View style={styles.pillContainer}>
-              <TouchableOpacity 
-                style={[styles.pill, formData.hasPreviousHistory === true && styles.pillActive]}
-                onPress={() => setFormData({...formData, hasPreviousHistory: true})}
-              >
-                <Text style={[styles.pillText, formData.hasPreviousHistory === true && styles.pillTextActive]}>Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.pill, formData.hasPreviousHistory === false && styles.pillActive]}
-                onPress={() => setFormData({...formData, hasPreviousHistory: false})}
-              >
-                <Text style={[styles.pillText, formData.hasPreviousHistory === false && styles.pillTextActive]}>No</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {formData.hasPreviousHistory && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description (Optional)</Text>
+          {formData.medicalHistory.includes('Others') && (
+            <View style={[styles.inputGroup, { marginTop: 12 }]}>
+              <Text style={styles.label}>Please specify</Text>
               <TextInput 
-                style={[styles.input, styles.textArea, focusedInput === 'prevDesc' && styles.inputFocused]} 
-                placeholder="E.g. Diabetes, Hypertension, past surgeries..."
+                style={[styles.input, styles.textArea, focusedInput === 'othersDesc' && styles.inputFocused]} 
+                placeholder="Describe other medical conditions..."
                 multiline
                 numberOfLines={3}
-                value={formData.previousHistoryDescription}
-                onChangeText={(text) => setFormData({...formData, previousHistoryDescription: text})}
-                onFocus={() => setFocusedInput('prevDesc')}
+                value={formData.medicalHistoryOthers}
+                onChangeText={(text) => setFormData({...formData, medicalHistoryOthers: text})}
+                onFocus={() => setFocusedInput('othersDesc')}
                 onBlur={() => setFocusedInput(null)}
                 placeholderTextColor="#94A3B8"
               />
@@ -381,32 +356,37 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     paddingTop: 12,
   },
-  pillContainer: {
+  checkboxRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  pill: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
-    marginHorizontal: 4,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.card,
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  pillActive: {
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  pillText: {
+  checkboxLabel: {
+    fontSize: 15,
     color: Colors.textLight,
-    fontWeight: '600',
-    fontSize: 12,
+    fontWeight: '500',
   },
-  pillTextActive: {
-    color: Colors.card,
-    fontWeight: '700',
+  checkboxLabelChecked: {
+    color: Colors.text,
+    fontWeight: '600',
   },
   saveButton: {
     backgroundColor: Colors.secondary,
