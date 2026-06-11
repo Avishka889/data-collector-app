@@ -46,7 +46,11 @@ export default function DashboardScreen() {
         setAuthError(null);
       } else {
         setIsAuthenticating(true);
-        signInWithEmailAndPassword(auth, 'REDACTED_ADMIN_EMAIL', 'REDACTED_ADMIN_PASSWORD')
+        signInWithEmailAndPassword(
+            auth,
+            process.env.EXPO_PUBLIC_ADMIN_EMAIL!,
+            process.env.EXPO_PUBLIC_ADMIN_PASSWORD!
+          )
           .then(() => {
             setIsAuthenticated(true);
             setIsAuthenticating(false);
@@ -225,7 +229,7 @@ export default function DashboardScreen() {
           onPress={() => {
             setAuthError(null);
             setIsAuthenticating(true);
-            signInWithEmailAndPassword(auth, 'REDACTED_ADMIN_EMAIL', 'REDACTED_ADMIN_PASSWORD')
+            signInWithEmailAndPassword(auth, process.env.EXPO_PUBLIC_ADMIN_EMAIL!, process.env.EXPO_PUBLIC_ADMIN_PASSWORD!)
               .then(() => { setIsAuthenticated(true); setIsAuthenticating(false); })
               .catch((err) => {
                 setAuthError(err.message);
